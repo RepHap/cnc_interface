@@ -1,0 +1,25 @@
+  <launch>
+    <!-- cnc_interface node-->
+    <node  name="cnc_interface"  pkg="cnc_interface" type="cnc_interface.py">
+      <param name="firmware" type="string" value="grbl" />
+      <!--Serial Port parameters-->
+      <param name="baudrate"     type="double" value="115200" />
+      <param name="port"         type="string" value="/dev/ttyUSB0"/>
+      <!-- /home/christianfrisson/Lab/References/Playground/Haply/KS0282 Reference/Marlin_Marlin_v1/Marlin_Marlin_RAMPS_2004_Ver1/Configuration.h -->
+      <!--Axis acceleration values in mm/s^2  -->
+      <param name="acceleration" type="int"    value="3000" /> 
+      <!--Workable volume in mm  -->
+      <param name="x_max" type="int" value="400" />  
+      <param name="y_max" type="int" value="400" />  
+      <param name="z_max" type="int" value="235" /> 
+      <!-- Speed values in mm/min -->
+      <param name="default_speed" type="int" value="1000" /> 
+      <param name="x_max_speed"   type="int" value="3000" />  
+      <param name="y_max_speed"   type="int" value="3000" />
+      <param name="z_max_speed"   type="int" value="240" />    
+      <!--axis steps values in steps/mm -->
+      <param name="x_steps_mm" type="int" value="80" />  
+      <param name="y_steps_mm" type="int" value="80" />
+      <param name="z_steps_mm" type="int" value="800" />
+    </node>
+  </launch>
