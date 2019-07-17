@@ -24,14 +24,21 @@ def stopCallback(msg):
 
 def main():
 
+	print('cnc_class main')
+	# rospy.logerr('cnc_class main')
+
 	''' create ROS topics '''
 	pos_pub     = rospy.Publisher('/cnc_interface/position',  Twist, queue_size = 10)
 	status_pub  = rospy.Publisher('/cnc_interface/status'  , String, queue_size = 10)
 	rospy.Subscriber('cnc_interface/cmd' ,  Twist,  cmdCallback)
 	rospy.Subscriber('cnc_interface/stop', String, stopCallback)
 
-	rospy.init_node('cnc_interface', anonymous=True)
+	# rospy.init_node('cnc_interface', anonymous=True)
+	rospy.init_node('cnc_interface', log_level=rospy.DEBUG)
 
+	rospy.loginfo('cnc_interface')
+
+	firmware          = rospy.get_param('cnc_interface/firmware')
 	port          = rospy.get_param('cnc_interface/port')
 	baud          = rospy.get_param('cnc_interface/baudrate')
 	acc           = rospy.get_param('cnc_interface/acceleration')  
@@ -46,11 +53,14 @@ def main():
 	steps_y 	  = rospy.get_param('cnc_interface/y_steps_mm')
 	steps_z 	  = rospy.get_param('cnc_interface/z_steps_mm')
 
+	rospy.loginfo('firmware: '+firmware)
+
 	cnc_obj.startup(port,baud,acc,max_x,max_y,max_z,default_speed,speed_x,speed_y,
-					speed_z,steps_x,steps_y,steps_z)
+					speed_z,steps_x,steps_y,steps_z,firmware)
 	rate = rospy.Rate(10)
 
 	while not rospy.is_shutdown():
+		# rospy.loginfo('cnc_interface while')
 
 		status     = cnc_obj.getStatus()
 		cnc_pose   = cnc_obj.getTwist()

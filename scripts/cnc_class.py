@@ -39,8 +39,9 @@ class cnc:
 		self.angular = [0.0, 0.0, 0.0]	 # angular coordinates
 		self.origin  = [0.0, 0.0, 0.0]	 # minimum coordinates
 		self.limits  = [0.0, 0.0, 0.0]	 # maximum coordinates
+		self.firmware = "grbl";
 	
-	def startup(self,port,baud, acc, maxx, maxy,maxz,spdf,spdx, spdy, spdz, stepsx, stepsy, stepsz):
+	def startup(self,port,baud, acc, maxx, maxy,maxz,spdf,spdx, spdy, spdz, stepsx, stepsy, stepsz, firmware):
 		""" initiate all CNC parameters readed from .launch file """
 		self.baudrate 	  =   baud
 		self.port 	      =   port
@@ -56,8 +57,24 @@ class cnc:
 		self.y_steps_mm   = stepsy
 		self.z_steps_mm   = stepsz
 		self.limits  = [self.x_max, self.y_max, self.z_max]	
+		self.firmware = firmware
 		#initiates the serial port
 		self.s = serial.Serial(self.port, self.baudrate)
+
+		if self.firmware == "repetier":
+			# Wait until startup lines are received
+			wait = False;
+			while True: 
+				# r = self.s.readline();
+				# status = r.decode('unicode_escape');#errors='ignore')
+				status = self.s.readline();
+				rospy.loginfo('startup "'+status+'"');
+				# rospy.loginfo(status.startswith('wait'));
+				# if status.startswith('wait'): break;
+				if status.startswith('wait'):
+					if wait == True: break;
+					wait = True;
+
 		# set movement to Absolut coordinates
 		self.ensureMovementMode(True)
 		# start homing procedure
@@ -74,6 +91,8 @@ class cnc:
 		return list(self.pos)	# copy the list so caller can't modify our internal state
 	
 	def getTwist(self):
+
+		rospy.loginfo('getTwist')
 
 		#convert coordinates to ROS Twist format to be able to publish it later
 		cnc_pose = Twist()
@@ -92,9 +111,25 @@ class cnc:
 		self.defaultSpeed = speed
 		
 	def home(self):
+		print('go home')
 		# initaites the home procedure
-		self.s.write("$H\n")
-		self.s.readline()
+		if self.firmware == "grbl":
+			self.s.write("$H\n")
+			_home = self.s.readline()
+			rospy.loginfo('home '+_home)
+		elif self.firmware == "repetier":
+			self.s.write("G28\n")
+			home = self.s.readline()
+			rospy.loginfo('home '+home)
+
+			# Wait until homing lines are received
+			while True: 
+				status = self.s.readline();
+				rospy.loginfo('home '+status);
+				# rospy.loginfo(status.startswith('busy:processing'));
+				# if not status.startswith('busy:processing'): break;
+				if status.startswith('wait'): break;
+
 		self.pos = list(self.origin)
 
 	def enableSteppers(self):
@@ -188,8 +223,22 @@ class cnc:
 		"""set current position to be (0,0,0), or a custom (x,y,z)"""
 		gcode = "G92 x{} y{} z{}\n".format(x, y, z)
 		self.s.write(gcode)
-		self.s.readline()
-		
+		_origin = self.s.readline()
+		rospy.loginfo('_origin '+_origin)
+
+		if self.firmware == "repetier":
+			# Wait until setOrigin lines are received
+			wait = False;
+			while True: 
+				status = self.s.readline();
+				rospy.loginfo('setOrigin "'+status+'"');
+				# rospy.loginfo(status.startswith('wait'));
+				# if status.startswith('X_OFFSET'): break;
+				if status.startswith('wait'): break;
+				# if status.startswith('wait'):
+				#  	if wait == True: break;
+				#  	wait = True;
+
 		# update our internal location
 		self.pos = [x, y, z]
 
@@ -202,7 +251,8 @@ class cnc:
 			self.s.write("G90\n")		# absolute movement mode
 		else:
 			self.s.write("G91\n")		# relative movement mode
-		self.s.readline()
+		movementMode = self.s.readline()
+		rospy.loginfo('ensureMovementMode '+movementMode)
 	
 
 	def blockUntilIdle(self):
@@ -220,19 +270,39 @@ class cnc:
 		
 	def getStatus(self):
 
-		self.s.write("?")
-		
-		while True:
-			try: 
-				status = self.s.readline()
-				if status is not None:
-					try:
-						matches = self.__pos_pattern__.findall(status)
-						if len(matches[1]) == 3:
-							self.pos = list(matches[1])				
-						return status
-					except IndexError:
-						print("No matches found in serial")
-				else: break
-			except:
-				print("Report readiness but empty")
+		rospy.loginfo('getStatus');
+
+		if self.firmware == "grbl":
+			
+			self.s.write("?")
+
+			while True:
+				try: 
+					status = self.s.readline();
+					rospy.loginfo('status '+status)
+					if status is not None:
+						try:
+							matches = self.__pos_pattern__.findall(status)
+							if len(matches[1]) == 3:
+								self.pos = list(matches[1])				
+							return status
+							rospy.loginfo('status try '+status)
+						except IndexError:
+							print("No matches found in serial")
+					else: break
+				except:
+					print("Report readiness but empty")
+
+		elif self.firmware == "repetier":
+			self.s.write("M114 S1\n")
+
+			status = self.s.readline()
+			rospy.loginfo('status "'+status+'"')
+
+			# Wait until homing lines are received
+			while True: 
+				status = self.s.readline();
+				rospy.loginfo('status '+status);
+				# rospy.loginfo(status.startswith('busy:processing'));
+				# if not status.startswith('busy:processing'): break;
+				if status.startswith('wait'): break;
