@@ -44,7 +44,7 @@ def main():
 	acc           = rospy.get_param('cnc_interface/acceleration')  
 	max_x 		  = rospy.get_param('cnc_interface/x_max')   
 	max_y 		  = rospy.get_param('cnc_interface/y_max')   
-	max_z 		  = rospy.get_param('cnc_interface/x_max')
+	max_z 		  = rospy.get_param('cnc_interface/z_max')
 	default_speed = rospy.get_param('cnc_interface/default_speed')   
 	speed_x  	  = rospy.get_param('cnc_interface/x_max_speed')
 	speed_y  	  = rospy.get_param('cnc_interface/y_max_speed')

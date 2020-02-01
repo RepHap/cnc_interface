@@ -80,7 +80,7 @@ class cnc:
 		# start homing procedure
 		self.home()
 		# set the current position as the origin (GRBL sometimes starts with z not 0)
-		self.setOrigin()	
+		self.setOrigin(x=0, y=self.y_max, z=self.z_max )	
 
 	def shutdown(self):
 		# close the serial connection
